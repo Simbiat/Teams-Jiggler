@@ -15,7 +15,9 @@ def switch_focus_to_app(app_exe, app_name):
                     app_window = pygetwindow.getWindowsWithTitle(f"{app_name}")
                     if app_window:
                         app_window[0].restore()
-                        #time.sleep(1)
+                        # For some reason if there is no sleep or if it's just 1 second the "jiggle" does not register properly sometimes
+                        # 2 seconds seem to be enough to stabilize the behavior
+                        time.sleep(2)
                         app_window[0].minimize()
                         return True
             except (psutil.NoSuchProcess, psutil.AccessDenied, psutil.ZombieProcess) as e:
