@@ -1,6 +1,7 @@
 import time
 import psutil
 import pygetwindow
+import traceback
 
 #4 minutes is selected because it looks like "Away" status is set at 5 minutes, but shows you ~2 minutes away.
 #4 minutes seem to work perfectly fine in avoiding that
@@ -13,29 +14,28 @@ def switch_focus_to_app(app_exe, app_name):
     global jiggles, skips
     try:
         for process in psutil.process_iter(attrs=['pid', 'name']):
-            try:
-                if process.name().lower() == app_exe:
-                    app_window = pygetwindow.getWindowsWithTitle(f"{app_name}")
-                    if app_window:
-                        #Jiggle only if window is not already active and maximized (most likely already in focus)
-                        if app_window[0].isActive and app_window[0].isMaximized:
-                            skips = skips + 1
-                            print(f"Jiggle skipped {skips} times")
+            if process.name().lower() == app_exe:
+                app_window = pygetwindow.getWindowsWithTitle(f"{app_name}")
+                if app_window:
+                    #Jiggle only if window is not already active and maximized (most likely already in focus)
+                    if app_window[0].isActive and app_window[0].isMaximized:
+                        skips = skips + 1
+                        print(f"Jiggle skipped {skips} times")
+                    else:
+                        #If it's minimized - restore, which will take focus
+                        if app_window[0].isMinimized:
+                            app_window[0].restore()
                         else:
-                            #If it's minimized - restore first
-                            if app_window[0].isMinimized:
-                                app_window[0].restore()
-                            #Activate the window so that we ensure that focus state changes
+                            #If not minimized - activate
                             app_window[0].activate()
-                            time.sleep(2)
-                            app_window[0].minimize()
-                            jiggles = jiggles + 1
-                            print(f"Jiggled Teams {jiggles} times")
-                        return True
-            except (psutil.NoSuchProcess, psutil.AccessDenied, psutil.ZombieProcess) as e:
-                print(f"Error while checking process: {e}")
-    except psutil.Error as e:
-        print(f"Error while iterating processes: {e}")
+                        time.sleep(2)
+                        app_window[0].minimize()
+                        jiggles = jiggles + 1
+                        print(f"Jiggled Teams {jiggles} times")
+                    return True
+    except Exception as e:
+        print(f"An exception occurred: {str(e)}")
+        traceback.print_exc()
     return False
 
 print(f"Teams Jiggler initiated")
@@ -44,6 +44,5 @@ while True:
     time.sleep(waitfor)
 
     # Switch focus to the first application
-    if not switch_focus_to_app("teams.exe", "Microsoft Teams"):
-        print(f"Application '{app1_exe}' not found!")
+    switch_focus_to_app("teams.exe", "Microsoft Teams")
 print(f"Teams Jiggler loop ended")
