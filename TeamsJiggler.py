@@ -8,14 +8,15 @@ import traceback
 waitfor = 4 * 60
 jiggles = 0
 skips = 0
+notfound = 0
 
 # Function to switch focus to the specified application
-def switch_focus_to_app(app_exe, app_name):
-    global jiggles, skips
+def switch_focus_to_app():
+    global jiggles, skips, notfound
     try:
         for process in psutil.process_iter(attrs=['pid', 'name']):
-            if process.name().lower() == app_exe:
-                app_window = pygetwindow.getWindowsWithTitle(f"{app_name}")
+            if process.name().lower() == 'teams.exe' or process.name().lower() == 'ms-teams.exe':
+                app_window = pygetwindow.getWindowsWithTitle('Microsoft Teams')
                 if app_window:
                     #Jiggle only if window is not already active and maximized (most likely already in focus)
                     if app_window[0].isActive and app_window[0].isMaximized:
@@ -33,16 +34,23 @@ def switch_focus_to_app(app_exe, app_name):
                         jiggles = jiggles + 1
                         print(f"Jiggled Teams {jiggles} times")
                     return True
+        notfound = notfound + 1
+        print(f"Teams was not found {notfound} times")
     except Exception as e:
         print(f"An exception occurred: {str(e)}")
         traceback.print_exc()
     return False
 
+waitforOrig = waitfor
 print(f"Teams Jiggler initiated")
 while True:
     # Sleep for 3 minutes after launching the script
     time.sleep(waitfor)
 
     # Switch focus to the first application
-    switch_focus_to_app("teams.exe", "Microsoft Teams")
+    if switch_focus_to_app():
+        waitfor = waitforOrig
+    else:
+        #If we fail, reduce wait time until we succeed
+        waitfor = 30
 print(f"Teams Jiggler loop ended")
